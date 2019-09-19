@@ -143,7 +143,7 @@ macro(_ADD_CYTHON_BINDINGS_TARGETS PYTHON PIP PACKAGE SOURCES GENERATE_SOURCES T
       endif()
     endforeach()
     if(${WITH_TESTS})
-      add_test(NAME test-${TARGET_NAME}
+      add_test(NAME ${PROJECT_NAME}::test-${TARGET_NAME}
         COMMAND ${CMAKE_COMMAND} -E env "${ENV_VAR}=${EXTRA_LD_PATH}$ENV{${ENV_VAR}}" ${CMAKE_COMMAND} -E env "PYTHONPATH=.${PATH_SEP}$ENV{PYTHONPATH}" ${CMAKE_COMMAND} -E chdir "${SETUP_LOCATION}" ${PYTHON} -c "import nose, sys; sys.exit(not nose.run())"
       )
     endif()
