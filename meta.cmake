@@ -16,11 +16,14 @@
 # This file defines helpful macros to work with a meta CMake project, i.e. a
 # CMake project that includes at least two projects
 
+include(cmake/uninstall.cmake)
+
 if(NOT DEFINED JRL_META_PACKAGE)
   set(JRL_META_PACKAGE FALSE)
 endif()
 
 macro(JRL_META_INIT)
+  _SETUP_PROJECT_UNINSTALL()
   set(JRL_META_PACKAGE TRUE)
   set(JRL_META_PROJECTS)
   set(JRL_META_ROOTDIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -33,11 +36,4 @@ macro(JRL_META_ADD_PROJECT NAME)
 endmacro()
 
 macro(JRL_META_FINALIZE)
-  set(UNINSTALL_TARGETS)
-  foreach(PKG JRL_META_PROJECTS)
-    if(TARGET uninstall-${PKG})
-      list(APPEND UNINSTALL_TARGETS uninstall-${PKG})
-    endif()
-  endforeach()
-  add_custom_target(uninstall DEPENDS UNINSTALL_TARGETS)
 endmacro()
