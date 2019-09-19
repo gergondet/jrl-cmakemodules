@@ -87,6 +87,7 @@
 #   EXCLUDE_FROM_ALL and make test should trigger their compilation.
 
 # Include base features.
+INCLUDE(cmake/meta.cmake)
 INCLUDE(cmake/logging.cmake)
 INCLUDE(cmake/portability.cmake)
 INCLUDE(cmake/compiler.cmake)

@@ -102,20 +102,26 @@ ENDMACRO(_SETUP_DEBIAN)
 
 MACRO(_SETUP_PROJECT_DEB)
   IF(UNIX AND NOT APPLE)
-  ADD_CUSTOM_TARGET(deb-src
-    COMMAND
-    git-buildpackage
-    --git-debian-branch=debian
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Generating source Debian package..."
-    )
-  ADD_CUSTOM_TARGET(deb
-    COMMAND
-    git-buildpackage
-    --git-debian-branch=debian --git-builder="debuild -S -i.git -I.git"
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Generating Debian package..."
-    )
+    SET(DEB_SRC_TARGET "deb-src")
+    SET(DEB_TARGET "deb")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DEB_SRC_TARGET "-${PROJECT_NAME}")
+      STRING(APPEND DEB_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DEB_SRC_TARGET}
+      COMMAND
+      git-buildpackage
+      --git-debian-branch=debian
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      COMMENT "Generating source Debian package..."
+      )
+    ADD_CUSTOM_TARGET(${DEB_TARGET}
+      COMMAND
+      git-buildpackage
+      --git-debian-branch=debian --git-builder="debuild -S -i.git -I.git"
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      COMMENT "Generating Debian package..."
+      )
   ENDIF(UNIX AND NOT APPLE)
 ENDMACRO(_SETUP_PROJECT_DEB)
 

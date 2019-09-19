@@ -28,8 +28,12 @@ MACRO(_SETUP_PROJECT_UNINSTALL)
     @ONLY
     )
 
+  SET(UNINSTALL_TARGET "uninstall")
+  IF(JRL_META_PACKAGE)
+    STRING(APPEND UNINSTALL_TARGET "-${PROJECT_NAME}")
+  ENDIF()
   ADD_CUSTOM_TARGET(
-    uninstall
+    ${UNINSTALL_TARGET}
     "${CMAKE_COMMAND}" -P
     "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
     )

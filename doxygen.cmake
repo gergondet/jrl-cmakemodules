@@ -54,27 +54,35 @@ MACRO(_SETUP_PROJECT_DOCUMENTATION)
     ENDIF()
 
     # Teach CMake how to generate the documentation.
+    SET(DOC_TARGET "doc")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DOC_TARGET "-${PROJECT_NAME}")
+    ENDIF()
     IF(MSVC)
       # FIXME: it is impossible to trigger documentation installation
       # at install, so put the target in ALL instead.
-      ADD_CUSTOM_TARGET(doc ALL
+      ADD_CUSTOM_TARGET(${DOC_TARGET} ALL
         COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
         WORKING_DIRECTORY doc
         COMMENT "Generating Doxygen documentation"
         )
     ELSE(MSVC)
-      ADD_CUSTOM_TARGET(doc
+      ADD_CUSTOM_TARGET(${DOC_TARGET}
         COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
         WORKING_DIRECTORY doc
         COMMENT "Generating Doxygen documentation"
         )
 
       IF(INSTALL_DOCUMENTATION)
-        INSTALL(CODE "EXECUTE_PROCESS(COMMAND ${CMAKE_MAKE_PROGRAM} doc)")
+        INSTALL(CODE "EXECUTE_PROCESS(COMMAND ${CMAKE_MAKE_PROGRAM} ${DOC_TARGET})")
       ENDIF(INSTALL_DOCUMENTATION)
     ENDIF(MSVC)
 
     IF (DOXYGEN_USE_TEMPLATE_CSS)
+      SET(GENERATE_CSS_TARGET "generate-template-css")
+      IF(JRL_META_PACKAGE)
+        STRING(APPEND GENERATE_CSS_TARGET "-${PROJECT_NAME}")
+      ENDIF()
       ADD_CUSTOM_COMMAND(
         OUTPUT
         ${CMAKE_CURRENT_BINARY_DIR}/doc/header.html
@@ -87,13 +95,13 @@ MACRO(_SETUP_PROJECT_DOCUMENTATION)
         WORKING_DIRECTORY doc
         COMMENT "Generating Doxygen template files"
         )
-      ADD_CUSTOM_TARGET(generate-template-css
+      ADD_CUSTOM_TARGET(${GENERATE_CSS_TARGET}
         DEPENDS
         ${CMAKE_CURRENT_BINARY_DIR}/doc/header.html
         ${CMAKE_CURRENT_BINARY_DIR}/doc/footer.html
         ${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen.css
         )
-      ADD_DEPENDENCIES(doc generate-template-css)
+      ADD_DEPENDENCIES(${DOC_TARGET} ${GENERATE_CSS_TARGET})
     ELSE (DOXYGEN_USE_TEMPLATE_CSS)
       FILE (COPY
         ${PROJECT_SOURCE_DIR}/cmake/doxygen/doxygen.css

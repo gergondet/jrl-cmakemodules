@@ -37,7 +37,11 @@ MACRO(_SETUP_PROJECT_DIST)
     ENDIF(APPLE)
 
     # Use git-archive-all.sh to generate distributable source code
-    ADD_CUSTOM_TARGET(distdir
+    SET(DISTDIR_TARGET "distdir")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DISTDIR_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DISTDIR_TARGET}
       COMMAND
       rm -f /tmp/${PROJECT_NAME}.tar
       && ${GIT_ARCHIVE_ALL}
@@ -58,19 +62,27 @@ MACRO(_SETUP_PROJECT_DIST)
       )
 
     # Create a tar.gz tarball for the project, and generate the signature
-    ADD_CUSTOM_TARGET(dist_targz
+    SET(DIST_TARGZ_TARGET "dist_targz")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DIST_TARGZ_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DIST_TARGZ_TARGET}
       COMMAND
       ${TAR} -czf ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.tar.gz
                   ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}/
       && ${GPG} --detach-sign --armor -o
       ${CMAKE_BINARY_DIR}/${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.tar.gz.sig
-      ${CMAKE_BINARY_DIR}/${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.tar.gz 
+      ${CMAKE_BINARY_DIR}/${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.tar.gz
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       COMMENT "Generating tar.gz tarball and its signature..."
       )
 
     # Create a tar.bz2 tarball for the project, and generate the signature
-    ADD_CUSTOM_TARGET(dist_tarbz2
+    SET(DIST_TARBZ2_TARGET "dist_tarbz2")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DIST_TARBZ2_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DIST_TARBZ2_TARGET}
       COMMAND
       ${TAR} -cjf ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.tar.bz2
                   ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}/
@@ -82,7 +94,11 @@ MACRO(_SETUP_PROJECT_DIST)
       )
 
     # Create a tar.xz tarball for the project, and generate the signature
-    ADD_CUSTOM_TARGET(dist_tarxz
+    SET(DIST_TARXZ_TARGET "dist_tarxz")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DIST_TARXZ_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DIST_TARXZ_TARGET}
       COMMAND
       ${TAR} -cJf ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.tar.xz
                   ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}/
@@ -94,17 +110,29 @@ MACRO(_SETUP_PROJECT_DIST)
       )
 
     # Alias: dist = dist_targz (backward compatibility)
-    ADD_CUSTOM_TARGET(dist DEPENDS dist_targz)
+    SET(DIST_TARGET "dist")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DIST_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DIST_TARGET} DEPENDS ${DIST_TARGZ_TARGET})
 
     # TODO: call this during `make clean`
-    ADD_CUSTOM_TARGET(distclean
+    SET(DISTCLEAN_TARGET "distclean")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DISTCLEAN_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DISTCLEAN_TARGET}
       COMMAND
       rm -rf ${CMAKE_BINARY_DIR}/${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}/
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       COMMENT "Cleaning dist sources..."
       )
 
-    ADD_CUSTOM_TARGET(distorig
+    SET(DISTORIG_TARGET "distorig")
+    IF(JRL_META_PACKAGE)
+      STRING(APPEND DISTORIG_TARGET "-${PROJECT_NAME}")
+    ENDIF()
+    ADD_CUSTOM_TARGET(${DISTORIG_TARGET}
       COMMAND
       cmake -E copy ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.tar.gz
               ${PROJECT_NAME}${PROJECT_SUFFIX}-${PROJECT_VERSION}.orig.tar.gz
@@ -112,10 +140,10 @@ MACRO(_SETUP_PROJECT_DIST)
       COMMENT "Generating orig tarball..."
       )
 
-    ADD_DEPENDENCIES(dist_targz distdir)
-    ADD_DEPENDENCIES(dist_tarbz2 distdir)
-    ADD_DEPENDENCIES(dist_tarxz distdir)
-    ADD_DEPENDENCIES(distorig dist)
+    ADD_DEPENDENCIES(${DIST_TARGZ_TARGET} ${DISTDIR_TARGET})
+    ADD_DEPENDENCIES(${DIST_TARBZ2_TARGET} ${DISTDIR_TARGET})
+    ADD_DEPENDENCIES(${DIST_TARXZ_TARGET} ${DISTDIR_TARGET})
+    ADD_DEPENDENCIES(${DISTORIG_TARGET} ${DIST_TARGET})
   ELSE()
     #FIXME: what to do here?
   ENDIF()
