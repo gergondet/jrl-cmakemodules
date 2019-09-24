@@ -69,6 +69,24 @@ endmacro()
 macro(_ADD_CYTHON_BINDINGS_TARGETS PYTHON PIP PACKAGE SOURCES GENERATE_SOURCES TARGETS WITH_TESTS)
   set(SETUP_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE}/${PYTHON}/$<CONFIGURATION>")
   set(${PACKAGE}_${PYTHON}_SETUP_LOCATION "${SETUP_LOCATION}" CACHE INTERNAL "")
+  if(WIN32)
+    set(ENV_VAR "PATH")
+    set(PATH_SEP ";")
+  else()
+    set(ENV_VAR "LD_LIBRARY_PATH")
+    set(PATH_SEP ":")
+  endif()
+  set(EXTRA_LD_PATH "")
+  foreach(TGT ${TARGETS})
+    _is_interface_library(${TGT} IS_INTERFACE)
+    if(NOT ${IS_INTERFACE})
+      set(EXTRA_LD_PATH "$<TARGET_FILE_DIR:${TGT}>${PATH_SEP}${EXTRA_LD_PATH}")
+    endif()
+  endforeach()
+  set(EXTRA_PYTHONPATH ".")
+  foreach(PPATH ${_CYTHON_${PYTHON}_EXTRA_PYTHONPATH})
+    set(EXTRA_PYTHONPATH "${PPATH}${PATH_SEP}${EXTRA_PYTHONPATH}")
+  endforeach()
   if(TARGET cython_${PYTHON}_${PACKAGE})
     target_include_directories(cython_${PYTHON}_${PACKAGE} INTERFACE "${SETUP_LOCATION}")
   endif()
@@ -86,7 +104,7 @@ macro(_ADD_CYTHON_BINDINGS_TARGETS PYTHON PIP PACKAGE SOURCES GENERATE_SOURCES T
   # Target to build the bindings
   set(TARGET_NAME ${PACKAGE}-${PYTHON}-bindings)
   add_custom_target(${TARGET_NAME} ALL
-    COMMAND ${CMAKE_COMMAND} -E chdir "${SETUP_LOCATION}" ${PYTHON} setup.py build_ext --inplace
+    COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${EXTRA_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}" ${CMAKE_COMMAND} -E chdir "${SETUP_LOCATION}" ${PYTHON} setup.py build_ext --inplace
     COMMENT "Generating local ${PACKAGE} ${PYTHON} bindings"
     DEPENDS ${SOURCES} ${GENERATE_SOURCES} SOURCES ${SOURCES} ${GENERATE_SOURCES}
   )
@@ -122,29 +140,15 @@ macro(_ADD_CYTHON_BINDINGS_TARGETS PYTHON PIP PACKAGE SOURCES GENERATE_SOURCES T
   endforeach()
   # Manual target to force regeneration
   add_custom_target(force-${TARGET_NAME}
-    COMMAND ${CMAKE_COMMAND} -E chdir "${SETUP_LOCATION}" ${PYTHON} setup.py build_ext --inplace --force
+    COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${EXTRA_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}" ${CMAKE_COMMAND} -E chdir "${SETUP_LOCATION}" ${PYTHON} setup.py build_ext --inplace --force
     COMMENT "Generating local ${PACKAGE} ${PYTHON} bindings (forced)"
   )
   set_target_properties(force-${TARGET_NAME} PROPERTIES FOLDER "bindings")
   # Tests
   if(${WITH_TESTS} AND NOT ${DISABLE_TESTS})
-    if(WIN32)
-      set(ENV_VAR "PATH")
-      set(PATH_SEP ";")
-    else()
-      set(ENV_VAR "LD_LIBRARY_PATH")
-      set(PATH_SEP ":")
-    endif()
-    set(EXTRA_LD_PATH "")
-    foreach(TGT ${TARGETS})
-      _is_interface_library(${TGT} IS_INTERFACE)
-      if(NOT ${IS_INTERFACE})
-        set(EXTRA_LD_PATH "$<TARGET_FILE_DIR:${TGT}>${PATH_SEP}${EXTRA_LD_PATH}")
-      endif()
-    endforeach()
     if(${WITH_TESTS})
       add_test(NAME ${PROJECT_NAME}::test-${TARGET_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "${ENV_VAR}=${EXTRA_LD_PATH}$ENV{${ENV_VAR}}" ${CMAKE_COMMAND} -E env "PYTHONPATH=.${PATH_SEP}$ENV{PYTHONPATH}" ${CMAKE_COMMAND} -E chdir "${SETUP_LOCATION}" ${PYTHON} -c "import nose, sys; sys.exit(not nose.run())"
+        COMMAND ${CMAKE_COMMAND} -E env "${ENV_VAR}=${EXTRA_LD_PATH}$ENV{${ENV_VAR}}" ${CMAKE_COMMAND} -E env "PYTHONPATH=${EXTRA_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}" ${CMAKE_COMMAND} -E chdir "${SETUP_LOCATION}" ${PYTHON} -c "import nose, sys; sys.exit(not nose.run())"
       )
     endif()
   endif()
@@ -179,6 +183,8 @@ macro(_ADD_CYTHON_BINDINGS_TARGETS PYTHON PIP PACKAGE SOURCES GENERATE_SOURCES T
     add_dependencies(uninstall uninstall-${TARGET_NAME})
   endif()
   install(CODE "EXECUTE_PROCESS(COMMAND \"${CMAKE_COMMAND}\" --build \"${CMAKE_BINARY_DIR}\" --config \${CMAKE_INSTALL_CONFIG_NAME} --target install-${TARGET_NAME})")
+  list(APPEND _CYTHON_${PYTHON}_EXTRA_PYTHONPATH "${SETUP_LOCATION}")
+  set(_CYTHON_${PYTHON}_EXTRA_PYTHONPATH "${_CYTHON_${PYTHON}_EXTRA_PYTHONPATH}" CACHE INTERNAL "")
 endmacro()
 
 #.rst:
